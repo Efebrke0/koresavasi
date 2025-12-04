@@ -1,126 +1,410 @@
 <!doctype html>
 <html lang="tr">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>Kore Savaşı — Türk Askeri</title>
-  <style>
-    html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#111; font-family: monospace; }
-    #gameCanvas { display:block; width:100%; height:100%; image-rendering: pixelated; }
-    #info { position:absolute; top:10px; width:100%; text-align:center; color:#eee; font-size:16px; z-index:10; text-shadow: 1px 1px #000; }
-    #levelScreen { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:white; text-align:center; display:none; z-index:20; font-size:24px; }
-    #gameOverScreen { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:white; text-align:center; display:none; z-index:20; }
-    #gameOverScreen button { padding:10px 20px; font-size:18px; margin-top:10px; cursor:pointer; }
-    #mobileControls { position:absolute; bottom:20px; left:50%; transform:translateX(-50%); display:flex; gap:10px; z-index:15; }
-    #mobileControls button { padding:15px 20px; font-size:18px; opacity:0.6; }
-    #soundBtn { position:absolute; top:10px; right:10px; z-index:20; padding:10px 15px; cursor:pointer; }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Kore Savaşı — Türk Askeri (Sprite Entegre + Enemy Fire + Ses)</title>
+<style>
+:root{--bg:#07162b;--accent:#ffb74d;--muted:#bfbfbf}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:#eee;font-family:monospace}
+#startMenu{position:absolute;inset:0;z-index:60;display:flex;align-items:center;justify-content:center}
+.menu-card{width:min(760px,94%);background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.08));border-radius:12px;padding:18px;box-shadow:0 12px 40px rgba(0,0,0,0.6);display:flex;gap:12px;align-items:center}
+.menu-left{flex:1}
+h1.title{margin:0;font-size:30px;color:var(--accent);text-shadow:0 6px 18px rgba(0,0,0,0.6)}
+p.lead{color:var(--muted);margin-top:8px;line-height:1.4}
+.controls{margin-top:12px;display:flex;gap:10px}
+.btn{background:var(--accent);color:#111;border:none;padding:10px 12px;border-radius:10px;font-weight:700;cursor:pointer}
+.btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:#fff}
+.preview{width:220px;height:140px;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:transparent}
+#info{position:absolute;top:10px;width:100%;text-align:center;color:#eee;font-size:15px;z-index:50;text-shadow:1px 1px #000}
+#gameOverScreen,#levelScreen{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:white;text-align:center;display:none;z-index:80}
+#mobileControls{display:none;position:absolute;bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:40}
+.ctrlBtn{width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);display:inline-flex;align-items:center;justify-content:center;font-size:28px;color:#fff}
+#soundBtn{position:absolute;top:12px;right:12px;z-index:90;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:rgba(0,0,0,0.3);cursor:pointer}
+#gameCanvas{display:block;position:fixed;inset:0;width:100%;height:100%;image-rendering:pixelated;z-index:10}
+.footer-note{position:absolute;left:12px;bottom:12px;color:var(--muted);z-index:70;font-size:12px}
+@media (max-width:820px){ .menu-card{flex-direction:column;align-items:stretch} .preview{width:100%;height:120px} h1.title{font-size:22px} }
+</style>
 </head>
 <body>
-<div id="info">Kore Savaşı'nda görev yapan Türk askerlerinin anısına — W/A/S/D veya yön tuşları ile hareket et, SPACE ile ateş et, Z özel yetenek.</div>
-<div id="levelScreen"></div>
-<div id="gameOverScreen">
-  <h1>OYUN BİTTİ</h1>
-  <p id="finalScore"></p>
-  <button onclick="restartGame()">Yeniden Oyna</button>
-</div>
-<button id="soundBtn">Ses: Aç</button>
-<div id="mobileControls">
-  <button id="upBtn">↑</button>
-  <button id="leftBtn">←</button>
-  <button id="downBtn">↓</button>
-  <button id="rightBtn">→</button>
-  <button id="shootBtn">FIRE</button>
-  <button id="powerBtn">Z</button>
-</div>
-<canvas id="gameCanvas"></canvas>
+  <div id="startMenu">
+    <div class="menu-card">
+      <div class="menu-left">
+        <h1 class="title">Kore Savaşında bir TÜRK askerisin</h1>
+        <p class="lead">Görevin: Düşman hatlarını yarıp birliklerini korumak. Hareket: W/A/S/D veya ok tuşları. Ateş: SPACE. Mobil için "Mobile ile Oyna" butonuna bas.</p>
+        <div class="controls">
+          <button class="btn" id="startBtn">PC ile Oyna</button>
+          <button class="btn" id="mobileBtn">Mobile ile Oyna</button>
+          <button class="btn ghost" id="howBtn">Nasıl Oynanır</button>
+        </div>
+      </div>
+      <div>
+        <div class="preview"><canvas id="previewCanvas" width="220" height="140" style="width:100%;height:100%;display:block"></canvas></div>
+        <div style="margin-top:8px;color:var(--muted);font-size:13px">Şehitlerimizi Ve Gazilerimizi Saygı ile Anıyoruz... </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="info">Kore Savaşı — Türk Askeri</div>
+  <div id="levelScreen"></div>
+  <div id="gameOverScreen"><h1>OYUN BİTTİ</h1><p id="finalScore"></p><button onclick="restartGame()">Yeniden Oyna</button></div>
+
+  <button id="soundBtn">Ses: Aç</button>
+
+  <div id="mobileControls">
+    <button class="ctrlBtn" id="leftBtn">◀</button>
+    <button class="ctrlBtn" id="fireBtn">🔥</button>
+    <button class="ctrlBtn" id="rightBtn">▶</button>
+  </div>
+
+  <canvas id="gameCanvas"></canvas>
+  <div class="footer-note">Kore Savaşı — Türk Askeri</div>
+
 <script>
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+/* ---------- setup ---------- */
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const preview = document.getElementById('previewCanvas');
+const pctx = preview.getContext('2d');
+canvas.width = innerWidth; canvas.height = innerHeight;
+
 let keys = {};
-document.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
-document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
+addEventListener('keydown', e=>keys[e.key.toLowerCase()]=true);
+addEventListener('keyup', e=>keys[e.key.toLowerCase()]=false);
 
-let player = { x: 50, y: canvas.height/2, w:32, h:32, speed:5, color:'#00c3ff', lives:3, powerCooldown:0 };
-let bgX=0;
-let screenMiddle = canvas.width/2;
-let soundEnabled = true;
+/* game state */
+let player, bullets=[], enemies=[], enemyBullets=[], explosions=[];
+let score=0, gameOver=false;
+let stars=[], clouds=[], bgX=0, screenMiddle = canvas.width/2;
+let spawnInterval = null, enemyBulletIntervalRef = null;
+let mobileMode=false;
 
-function drawBackground(){ ctx.fillStyle='#0d0d0d'; ctx.fillRect(0,0,canvas.width,canvas.height);
-  for(let i=0;i<canvas.width;i+=80){ ctx.fillStyle='#111'; ctx.fillRect((i-bgX)%canvas.width, canvas.height-40, 40, 40); }
-  bgX+=2;
+/* ---------- SPRITE SETUP (unchanged) ---------- */
+const spriteImg = new Image();
+spriteImg.crossOrigin = 'anonymous';
+spriteImg.src = 'https://opengameart.org/sites/default/files/soldier_sheet.png';
+
+const FRAME_W = 64;
+const FRAME_H = 64;
+const SPRITE_SCALE = 1.6; // draw bigger than original
+const ANIM_FPS = 10;
+const ANIM_TICKS = 1000 / ANIM_FPS;
+
+const animations = {
+  idle: { row: 0, frames: 6 },
+  run:  { row: 1, frames: 6 },
+  shoot:{ row: 2, frames: 6 },
+  dead: { row: 3, frames: 6 }
+};
+
+/* ---------- AUDIO (WebAudio simple effects) ---------- */
+let audioCtx = null;
+let masterGain = null;
+let soundOn = true;
+function ensureAudio(){
+  if(!audioCtx){
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = 0.9;
+    masterGain.connect(audioCtx.destination);
+  }
+}
+function playShootSound(){
+  if(!soundOn) return;
+  ensureAudio();
+  const t = audioCtx.currentTime;
+  const o = audioCtx.createOscillator(); o.type='square'; o.frequency.setValueAtTime(900, t);
+  const g = audioCtx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.25, t+0.01); g.gain.exponentialRampToValueAtTime(0.0001, t+0.2);
+  o.connect(g); g.connect(masterGain); o.start(t); o.stop(t+0.21);
+}
+function playEnemyShootSound(){
+  if(!soundOn) return;
+  ensureAudio();
+  const t = audioCtx.currentTime;
+  const o = audioCtx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(420, t);
+  const g = audioCtx.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(0.15,t+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t+0.3);
+  o.connect(g); g.connect(masterGain); o.start(t); o.stop(t+0.32);
+}
+function playHitSound(){
+  if(!soundOn) return;
+  ensureAudio();
+  const t = audioCtx.currentTime;
+  const o = audioCtx.createOscillator(); o.type='triangle'; o.frequency.setValueAtTime(160, t);
+  const g = audioCtx.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(0.5,t+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t+0.25);
+  o.connect(g); g.connect(masterGain); o.start(t); o.stop(t+0.26);
+}
+function playExplosionSound(){
+  if(!soundOn) return;
+  ensureAudio();
+  const t = audioCtx.currentTime;
+  // short noise-ish burst via multiple oscillators
+  for(let i=0;i<3;i++){
+    const o = audioCtx.createOscillator(); o.type='sawtooth'; o.frequency.setValueAtTime(120 + i*40, t);
+    const g = audioCtx.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(0.25,t+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t+0.5);
+    o.connect(g); g.connect(masterGain); o.start(t); o.stop(t+0.5);
+  }
 }
 
-let bullets=[];
-function shoot(){ bullets.push({ x: player.x+player.w, y: player.y+player.h/2-4, w:8, h:4, speed:12, color:'#fff' }); }
-function powerShot(){ if(player.powerCooldown<=0){ for(let i=-2;i<=2;i++){ bullets.push({ x: player.x+player.w, y: player.y+player.h/2+i*8, w:8, h:4, speed:14, color:'#ff0' }); } player.powerCooldown=200; } }
+/* ---------- preview animation ---------- */
+function initPreview(){
+  pctx.clearRect(0,0,preview.width,preview.height);
+  for(let i=0;i<40;i++){
+    pctx.fillStyle = ['#ffb74d','#ff8a65','#81d4fa'][i%3];
+    pctx.beginPath(); pctx.arc(Math.random()*preview.width, Math.random()*preview.height, 2+Math.random()*3, 0, Math.PI*2); pctx.fill();
+  }
+}
+initPreview();
 
-let enemyBullets=[];
-function enemyShoot(en, pattern=0){ if(pattern===0){ enemyBullets.push({ x:en.x, y:en.y+en.h/2, w:8, h:4, speed:-6, color:'#ff0' }); }
-else if(pattern===1){ for(let i=-2;i<=2;i++){ enemyBullets.push({ x:en.x, y:en.y+en.h/2+i*8, w:8, h:4, speed:-6, color:'#f0f' }); } }
-else if(pattern===2){ enemyBullets.push({ x:en.x, y:en.y+en.h/2, w:16, h:4, speed:-10, color:'#f00' }); } }
+/* ---------- engine helpers ---------- */
+function drawSky(){
+  const g = ctx.createLinearGradient(0,0,0,canvas.height);
+  g.addColorStop(0,'#01203a'); g.addColorStop(0.5,'#063049'); g.addColorStop(1,'#071326');
+  ctx.fillStyle = g; ctx.fillRect(0,0,canvas.width,canvas.height);
+  stars.forEach(s=>{
+    const x = (s.x - bgX * s.speed*0.02 + canvas.width) % canvas.width;
+    ctx.fillStyle='#fff'; ctx.globalAlpha = 0.6; ctx.fillRect(x, s.y, s.s, s.s); ctx.globalAlpha = 1;
+  });
+  clouds.forEach(c=>{
+    c.x -= c.speed;
+    if(c.x + c.w < -50) c.x = canvas.width + 50;
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    ctx.beginPath(); ctx.ellipse(c.x, c.y, c.w, c.h, 0, 0, Math.PI*2); ctx.fill();
+  });
+  bgX += 1.2;
+}
 
-const upBtn=document.getElementById('upBtn'); const downBtn=document.getElementById('downBtn'); const leftBtn=document.getElementById('leftBtn'); const rightBtn=document.getElementById('rightBtn'); const shootBtn=document.getElementById('shootBtn'); const powerBtn=document.getElementById('powerBtn');
-upBtn.addEventListener('touchstart', ()=>keys['w']=true); upBtn.addEventListener('touchend', ()=>keys['w']=false);
-downBtn.addEventListener('touchstart', ()=>keys['s']=true); downBtn.addEventListener('touchend', ()=>keys['s']=false);
-leftBtn.addEventListener('touchstart', ()=>keys['a']=true); leftBtn.addEventListener('touchend', ()=>keys['a']=false);
-rightBtn.addEventListener('touchstart', ()=>keys['d']=true); rightBtn.addEventListener('touchend', ()=>keys['d']=false);
-shootBtn.addEventListener('touchstart', shoot);
-powerBtn.addEventListener('touchstart', powerShot);
-document.addEventListener('keydown', e => { if(e.key===' ') shoot(); if(e.key.toLowerCase()==='z') powerShot(); });
+/* ---------- Entities ---------- */
+function initEntities(){
+  player = {
+    x:50, y:canvas.height/2 - 32,
+    w: FRAME_W * SPRITE_SCALE, h: FRAME_H * SPRITE_SCALE,
+    speed:5, lives:3,
+    anim: 'idle', frame:0, timer:0
+  };
+  bullets = []; enemies = []; enemyBullets = []; explosions = [];
+  score=0; gameOver=false;
+  stars=[]; clouds=[];
+  for(let i=0;i<120;i++) stars.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, s:Math.random()*2+0.6, speed:0.2+Math.random()*1.2});
+  for(let i=0;i<28;i++) clouds.push({x:Math.random()*canvas.width, y:50+Math.random()*130, w:100+Math.random()*200, h:25+Math.random()*30, speed:0.2+Math.random()*0.6});
+  if(spawnInterval) clearInterval(spawnInterval);
+  spawnInterval = setInterval(()=>{ if(!gameOver) spawnEnemy(); }, 900);
+}
+
+/* spawn enemy */
+function spawnEnemy(){
+  const size = 28 + Math.floor(Math.random()*20);
+  enemies.push({ x: canvas.width, y: Math.random()*(canvas.height-size), w:size, h:size, speed:2+Math.random()*2, hp:1, color:'#ff6b6b', shootCooldown: 80 + Math.floor(Math.random()*120) });
+}
+
+/* enemy shoots */
+function enemyShoot(en){
+  if(!en) return;
+  enemyBullets.push({ x: en.x, y: en.y + en.h/2 - 3, w:8, h:6, speed: -8, color:'#f90', from: en });
+  playEnemyShootSound();
+}
+
+/* bullets (player) */
+function shoot(){
+  if(!player || gameOver) return;
+  player.anim = 'shoot'; player.frame = 0; player.timer = 0;
+  bullets.push({ x: player.x + player.w - 6, y: player.y + player.h/2 - 4, w:10, h:6, speed:14, color:'#fff' });
+  playShootSound();
+}
+
+/* simple explosion (circle) */
+function createExplosion(x,y){
+  explosions.push({ x,y, r:0, max:28, t:0 });
+  playExplosionSound();
+}
+
+/* collision helper */
+function overlap(a,b){ return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
+
+/* ---------- sprite update/draw ---------- */
+function updatePlayerSprite(dt){
+  player.timer += dt;
+  if(player.timer >= ANIM_TICKS){
+    player.timer = 0;
+    player.frame++;
+    const anim = animations[player.anim];
+    if(player.frame >= anim.frames){
+      if(player.anim === 'shoot'){ player.anim = 'idle'; player.frame = 0; }
+      else if(player.anim === 'dead'){ player.frame = anim.frames - 1; }
+      else player.frame = 0;
+    }
+  }
+}
+function drawPlayerSprite(){
+  if(spriteImg.complete && spriteImg.naturalWidth){
+    const anim = animations[player.anim];
+    const sx = player.frame * FRAME_W;
+    const sy = anim.row * FRAME_H;
+    ctx.drawImage(spriteImg, sx, sy, FRAME_W, FRAME_H, player.x, player.y, player.w, player.h);
+  } else {
+    ctx.fillStyle = '#00c3ff'; ctx.fillRect(player.x, player.y, player.w, player.h);
+  }
+}
+
+/* ---------- main loop ---------- */
+let lastTS = 0;
+let running = false;
+
+function loop(timestamp){
+  if(!running) return;
+  const dt = timestamp - lastTS || 16;
+  lastTS = timestamp;
+
+  drawSky();
+
+  // input movement
+  if(keys['arrowup']||keys['w']) { player.y = Math.max(0, player.y - player.speed); player.anim = 'run'; }
+  else if(keys['arrowdown']||keys['s']) { player.y = Math.min(canvas.height - player.h, player.y + player.speed); player.anim = 'run'; }
+  else if(keys['arrowleft']||keys['a']) { player.x = Math.max(0, player.x - player.speed); player.anim = 'run'; }
+  else if(keys['arrowright']||keys['d']) { player.x = Math.min(screenMiddle - player.w, player.x + player.speed); player.anim = 'run'; }
+  else { if(player.anim !== 'shoot' && player.anim !== 'dead') player.anim = 'idle'; }
+
+  if(mobileMode){
+    if(window._mobileLeft) { player.x = Math.max(0, player.x - player.speed); player.anim='run'; }
+    if(window._mobileRight) { player.x = Math.min(screenMiddle - player.w, player.x + player.speed); player.anim='run'; }
+  }
+
+  // update bullets
+  bullets.forEach((b,i)=>{ b.x += b.speed; if(b.x > canvas.width) bullets.splice(i,1); });
+
+  // enemies: move, shoot, check hit by player bullets
+  enemies.forEach((en, ei)=>{
+    en.x -= en.speed;
+    // shoot cooldown
+    en.shootCooldown--;
+    if(en.shootCooldown <= 0){
+      enemyShoot(en);
+      en.shootCooldown = 60 + Math.floor(Math.random()*120);
+    }
+    // bullet collision
+    bullets.forEach((b, bi)=>{
+      if(overlap(b,en)){
+        bullets.splice(bi,1);
+        en.hp--;
+        createExplosion(en.x + en.w/2, en.y + en.h/2);
+        playHitSound();
+        if(en.hp <= 0){
+          enemies.splice(ei,1);
+          score += 1;
+        }
+      }
+    });
+    // remove if offscreen
+    if(en.x + en.w < -50) enemies.splice(ei,1);
+  });
+
+  // enemy bullets: move toward left (negative speed), check hit player
+  enemyBullets.forEach((eb, i)=>{
+    eb.x += eb.speed; // speed negative
+    if(eb.x + eb.w < 0) { enemyBullets.splice(i,1); return; }
+    if(overlap(eb, player)){
+      enemyBullets.splice(i,1);
+      player.lives = Math.max(0, player.lives - 1);
+      createExplosion(player.x + player.w/2, player.y + player.h/2);
+      playHitSound();
+      // if dead
+      if(player.lives <= 0){
+        player.anim = 'dead';
+        gameOver = true;
+        running = false;
+        document.getElementById('finalScore').innerText = 'Toplam Puan: ' + score;
+        document.getElementById('gameOverScreen').style.display = 'block';
+      }
+    }
+  });
+
+  // update explosions (simple expand)
+  explosions.forEach((ex, idx)=>{
+    ex.t += dt;
+    ex.r = Math.min(ex.max, ex.r + dt*0.05);
+    // draw simple explosion circle fade
+    ctx.beginPath(); ctx.fillStyle = `rgba(255,180,60,${1 - ex.r/ex.max})`; ctx.arc(ex.x, ex.y, ex.r, 0, Math.PI*2); ctx.fill();
+    if(ex.r >= ex.max) explosions.splice(idx,1);
+  });
+
+  // player sprite update & draw
+  updatePlayerSprite(dt);
+  drawPlayerSprite();
+
+  // draw bullets/enemies/enemy bullets/HUD
+  bullets.forEach(b=>{ ctx.fillStyle=b.color; ctx.fillRect(b.x,b.y,b.w,b.h); });
+  enemies.forEach(e=>{ ctx.fillStyle = e.color; ctx.fillRect(e.x,e.y,e.w,e.h); });
+  enemyBullets.forEach(eb=>{ ctx.fillStyle = eb.color; ctx.fillRect(eb.x, eb.y, eb.w, eb.h); });
+
+  // HUD
+  ctx.fillStyle='#fff'; ctx.font='18px monospace'; ctx.fillText(`Puan: ${score}`, 18, 28);
+  ctx.fillText(`Can: ${player.lives}`, 18, 52);
+
+  requestAnimationFrame(loop);
+}
+
+/* ---------- Start / controls ---------- */
+function startPC(){
+  document.getElementById('startMenu').style.display='none';
+  document.getElementById('mobileControls').style.display='none';
+  mobileMode = false;
+  screenMiddle = canvas.width/2;
+  initEntities();
+  lastTS = performance.now();
+  running = true;
+  requestAnimationFrame(loop);
+}
+function startMobile(){
+  document.getElementById('startMenu').style.display='none';
+  document.getElementById('mobileControls').style.display='flex';
+  mobileMode = true;
+  screenMiddle = canvas.width/2;
+  initEntities();
+  lastTS = performance.now();
+  running = true;
+  requestAnimationFrame(loop);
+}
+
+document.getElementById('startBtn').addEventListener('click', ()=>{
+  ensureAudio(); startPC();
+});
+document.getElementById('mobileBtn').addEventListener('click', ()=>{
+  ensureAudio(); startMobile();
+});
+document.getElementById('howBtn').addEventListener('click', ()=>alert('Hareket: W/A/S/D veya ok tuşları. SPACE: Ateş. Mobile: on-screen butonlar.'));
 document.getElementById('soundBtn').addEventListener('click', ()=>{
-    soundEnabled = !soundEnabled;
-    document.getElementById('soundBtn').innerText = soundEnabled ? 'Ses: Aç' : 'Ses: Kapalı';
+  soundOn = !soundOn;
+  document.getElementById('soundBtn').innerText = soundOn ? 'Ses: Aç' : 'Ses: Kapalı';
+  if(masterGain) masterGain.gain.value = soundOn ? 0.9 : 0;
 });
 
-let enemies=[], boss=null, level=1, levelMessageShown=false;
-function spawnEnemy(){ let size=32+Math.floor(Math.random()*16); let typeRand=Math.random(); let type='normal'; if(level>=2 && typeRand<0.3) type='fast'; if(level>=3 && typeRand>=0.3 && typeRand<0.5) type='tank'; let speed=type==='fast'?6:type==='tank'?1.5:3; let color=type==='fast'?'#ff0000':type==='tank'?'#800080':'#ff3b3b'; enemies.push({x:canvas.width, y:Math.random()*(canvas.height-size), w:size, h:size, speed, color, type, hp:type==='tank'?5:1, shootCooldown:50+Math.random()*100}); }
-setInterval(()=>{ if(!boss) spawnEnemy(); }, 800);
-function spawnBoss(){ boss={ x:canvas.width, y:canvas.height/2-64, w:128, h:128, speed:2, color:'#ff8800', hp:50+level*10, shootCooldown:60, attackPattern:0 }; }
+/* mobile button bindings (touch & mouse) */
+const leftBtn = document.getElementById('leftBtn'), rightBtn = document.getElementById('rightBtn'), fireBtn = document.getElementById('fireBtn');
+leftBtn.addEventListener('touchstart', ()=>{ window._mobileLeft = true; }, {passive:true});
+leftBtn.addEventListener('touchend', ()=>{ window._mobileLeft = false; }, {passive:true});
+rightBtn.addEventListener('touchstart', ()=>{ window._mobileRight = true; }, {passive:true});
+rightBtn.addEventListener('touchend', ()=>{ window._mobileRight = false; }, {passive:true});
+leftBtn.addEventListener('mousedown', ()=>{ window._mobileLeft = true; });
+leftBtn.addEventListener('mouseup', ()=>{ window._mobileLeft = false; });
+rightBtn.addEventListener('mousedown', ()=>{ window._mobileRight = true; });
+rightBtn.addEventListener('mouseup', ()=>{ window._mobileRight = false; });
+fireBtn.addEventListener('click', ()=>{ if(mobileMode) shoot(); });
 
-let explosions=[];
-function createExplosion(x,y){ explosions.push({x,y,r:0,maxR:24}); }
-function drawRect(obj){ ctx.fillStyle=obj.color; ctx.fillRect(obj.x,obj.y,obj.w,obj.h); }
-function drawExplosion(ex){ ctx.fillStyle='#ffcc00'; ctx.beginPath(); ctx.arc(ex.x,ex.y,ex.r,0,Math.PI*2); ctx.fill(); ex.r+=1; if(ex.r>=ex.maxR) explosions.splice(explosions.indexOf(ex),1); }
+/* keyboard fire */
+addEventListener('keydown', e=>{ if(e.key === ' ') shoot(); });
 
-let infoMessages=["1950'de Türk Tugayı Kore'ye gönderildi.","Türk askerleri Kunuri Savaşı'nda büyük kahramanlık gösterdi.","721 şehidimiz, 2147 gazimiz vardır.","Türk Tugayı, BM kuvvetlerinin kritik savunma hatlarını korudu.","Kore halkı Türk askerlerine büyük saygı duyar."];
-let currentInfo=0; setInterval(()=>{ currentInfo=(currentInfo+1)%infoMessages.length; },5000);
-
-let score=0; let gameOver=false;
-function gameLoop(){
-  if(gameOver) return; drawBackground();
-  let newLevel=Math.floor(score/20)+1; if(newLevel>level){ level=newLevel; levelMessageShown=false; }
-  if(!levelMessageShown){ document.getElementById('levelScreen').innerHTML=`Seviye ${level}<br>${infoMessages[(level-1)%infoMessages.length]}`; document.getElementById('levelScreen').style.display='block'; setTimeout(()=>{ document.getElementById('levelScreen').style.display='none'; levelMessageShown=true; },3000); }
-
-  if(keys['arrowup']||keys['w']) player.y=Math.max(0,player.y-player.speed);
-  if(keys['arrowdown']||keys['s']) player.y=Math.min(canvas.height-player.h,player.y+player.speed);
-  if(keys['arrowleft']||keys['a']) player.x=Math.max(0,player.x-player.speed);
-  if(keys['arrowright']||keys['d']) player.x=Math.min(screenMiddle-player.w,player.x+player.speed);
-
-  bullets.forEach((b,i)=>{ b.x+=b.speed; if(b.x>canvas.width) bullets.splice(i,1); }); if(player.powerCooldown>0) player.powerCooldown--;
-
-  enemies.forEach((en,ei)=>{ en.x-=en.speed; en.shootCooldown--; if(en.shootCooldown<=0){ let pattern=0; if(level>=2) pattern=1; if(level>=4) pattern=2; enemyShoot(en, pattern); en.shootCooldown=50+Math.random()*100; }
-    bullets.forEach((b,bi)=>{ if(b.x<b.x+en.w && b.x+b.w>en.x && b.y<b.y+en.h && b.y+b.h>en.y){ en.hp--; if(en.hp<=0){ createExplosion(en.x+en.w/2,en.y+en.h/2); enemies.splice(ei,1); score+=en.type==='fast'?3:en.type==='tank'?5:1; } bullets.splice(bi,1); } }); });
-
-  enemyBullets.forEach((b,i)=>{ b.x+=b.speed; if(b.x<0||b.x>canvas.width) enemyBullets.splice(i,1);
-    if(b.x<player.x+player.w && b.x+b.w>player.x && b.y<player.y+player.h && b.y+b.h>player.y){ player.lives--; enemyBullets.splice(i,1); createExplosion(player.x+player.w/2,player.y+player.h/2); } });
-
-  if(score>=50 && !boss) spawnBoss();
-  if(boss){ boss.x-=boss.speed; boss.shootCooldown--; if(boss.shootCooldown<=0){ boss.attackPattern++; if(boss.attackPattern>2) boss.attackPattern=0; enemyShoot(boss, boss.attackPattern); boss.shootCooldown=50; }
-    bullets.forEach((b,bi)=>{ if(b.x<b.x+boss.w && b.x+b.w>boss.x && b.y<b.y+boss.h && b.y+b.h>boss.y){ boss.hp--; bullets.splice(bi,1); createExplosion(boss.x+boss.w/2,boss.y+boss.h/2); score+=5; } }); drawRect(boss); if(boss.hp<=0){ createExplosion(boss.x+boss.w/2,boss.y+boss.h/2); boss=null; } }
-
-  drawRect(player); bullets.forEach(drawRect); enemies.forEach(drawRect); enemyBullets.forEach(drawRect); explosions.forEach(drawExplosion);
-  ctx.fillStyle='#fff'; ctx.font='20px monospace'; ctx.fillText(`Puan: ${score}`,20,30); ctx.fillText(`Can: ${player.lives}`,20,60);
-  ctx.fillText(infoMessages[currentInfo],20,90);
-
-  if(player.lives<=0){ gameOver=true; document.getElementById('finalScore').innerText='Toplam Puan: '+score; document.getElementById('gameOverScreen').style.display='block'; return; }
-  requestAnimationFrame(gameLoop);
+/* restartGame */
+function restartGame(){
+  document.getElementById('gameOverScreen').style.display='none';
+  initEntities();
+  running = true;
+  gameOver = false;
+  lastTS = performance.now();
+  requestAnimationFrame(loop);
 }
-gameLoop();
-function restartGame(){ player.lives=3; player.x=50; player.y=canvas.height/2; bullets=[]; enemies=[]; enemyBullets=[]; boss=null; score=0; gameOver=false; level=1; document.getElementById('gameOverScreen').style.display='none'; gameLoop(); }
-window.addEventListener('resize', ()=>{ canvas.width=window.innerWidth; canvas.height=window.innerHeight; screenMiddle = canvas.width/2; });
+
+/* resize */
+addEventListener('resize', ()=>{ canvas.width = innerWidth; canvas.height = innerHeight; screenMiddle = canvas.width/2; });
+
 </script>
 </body>
 </html>
