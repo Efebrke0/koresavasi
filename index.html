@@ -1,64 +1,170 @@
 <!doctype html>
+
 <html lang="tr">
+
 <head>
+
 <meta charset="utf-8" />
+
 <meta name="viewport" content="width=device-width,initial-scale=1" />
+
 <title>Kore Savaşı — Türk Askeri</title>
+
 <style>
+
 :root{--bg:#07162b;--accent:#ffb74d;--muted:#bfbfbf}
+
 html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:#eee;font-family:monospace}
+
 #startMenu{position:absolute;inset:0;z-index:60;display:flex;align-items:center;justify-content:center}
+
 .menu-card{width:min(760px,94%);background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.08));border-radius:12px;padding:18px;box-shadow:0 12px 40px rgba(0,0,0,0.6);display:flex;gap:12px;align-items:center}
+
 .menu-left{flex:1}
+
 h1.title{margin:0;font-size:30px;color:var(--accent);text-shadow:0 6px 18px rgba(0,0,0,0.6)}
+
 p.lead{color:var(--muted);margin-top:8px;line-height:1.4}
+
 .controls{margin-top:12px;display:flex;gap:10px}
+
 .btn{background:var(--accent);color:#111;border:none;padding:10px 12px;border-radius:10px;font-weight:700;cursor:pointer}
+
 .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:#fff}
+
 .preview{width:220px;height:140px;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:transparent}
+
 #info{position:absolute;top:10px;width:100%;text-align:center;color:#eee;font-size:15px;z-index:50;text-shadow:1px 1px #000}
+
 #gameOverScreen,#levelScreen{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:white;text-align:center;display:none;z-index:80}
-#mobileControls{display:none;position:absolute;bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:40}
+
+/* Mobil kontrol butonlarının konum ve düzeni güncellendi */
+
+#mobileControls{
+
+    /* BAŞLANGIÇTA GİZLİ OLMASI İÇİN SADECE `display: none;` KULLANILDI */
+
+    display:none;
+
+    position:absolute;
+
+    bottom:18px;
+
+    left:50%;
+
+    transform:translateX(-50%);
+
+    display:grid; /* Grid yapısına geçildi (JS ile gösterildiğinde kullanılacak) */
+
+    grid-template-areas:
+
+        ". up ."
+
+        "left fire right"
+
+        ". down .";
+
+    gap:10px;
+
+    z-index:40;
+
+}
+
+#upBtn{grid-area: up;}
+
+#downBtn{grid-area: down;}
+
+#leftBtn{grid-area: left;}
+
+#rightBtn{grid-area: right;}
+
+#fireBtn{grid-area: fire;}
+
+
+
 .ctrlBtn{width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);display:inline-flex;align-items:center;justify-content:center;font-size:28px;color:#fff}
+
 #soundBtn{position:absolute;top:12px;right:12px;z-index:90;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:rgba(0,0,0,0.3);cursor:pointer}
+
 #gameCanvas{display:block;position:fixed;inset:0;width:100%;height:100%;image-rendering:pixelated;z-index:10}
+
 .footer-note{position:absolute;left:12px;bottom:12px;color:var(--muted);z-index:70;font-size:12px}
+
 @media (max-width:820px){ .menu-card{flex-direction:column;align-items:stretch} .preview{width:100%;height:120px} h1.title{font-size:22px} }
+
 </style>
+
 </head>
+
 <body>
+
   <div id="startMenu">
+
     <div class="menu-card">
+
       <div class="menu-left">
+
         <h1 class="title">Kore Savaşında bir TÜRK askerisin</h1>
+
         <p class="lead">Görevin: Düşman hatlarını yarıp birliklerini korumak. Hareket: W/A/S/D veya ok tuşları. Ateş: SPACE. Mobil için "Mobile ile Oyna" butonuna bas.</p>
+
         <div class="controls">
+
           <button class="btn" id="startBtn">PC ile Oyna</button>
+
           <button class="btn" id="mobileBtn">Mobile ile Oyna</button>
+
           <button class="btn ghost" id="howBtn">Nasıl Oynanır</button>
+
         </div>
+
       </div>
+
       <div>
+
         <div class="preview"><canvas id="previewCanvas" width="220" height="140" style="width:100%;height:100%;display:block"></canvas></div>
+
         <div style="margin-top:8px;color:var(--muted);font-size:13px">Şehitlerimizi Ve Gazilerimizi Saygı ile Anıyoruz... </div>
+
       </div>
+
     </div>
+
   </div>
 
+
+
   <div id="info">Kore Savaşı — Türk Askeri</div>
+
   <div id="levelScreen"></div>
+
   <div id="gameOverScreen"><h1>OYUN BİTTİ</h1><p id="finalScore"></p><button onclick="restartGame()">Yeniden Oyna</button></div>
+
+
 
   <button id="soundBtn">Ses: Aç</button>
 
+
+
   <div id="mobileControls">
+
+    <button class="ctrlBtn" id="upBtn">▲</button>
+
     <button class="ctrlBtn" id="leftBtn">◀</button>
+
     <button class="ctrlBtn" id="fireBtn">🔥</button>
+
     <button class="ctrlBtn" id="rightBtn">▶</button>
+
+    <button class="ctrlBtn" id="downBtn">▼</button>
+
   </div>
 
   <canvas id="gameCanvas"></canvas>
+
   <div class="footer-note">Kore Savaşı — Türk Askeri</div>
+
+
 
 <script>
 /* ---------- setup ---------- */
@@ -74,6 +180,7 @@ addEventListener('keyup', e=>keys[e.key.toLowerCase()]=false);
 
 /* game state */
 let player, bullets=[], enemies=[], enemyBullets=[], explosions=[];
+let healthPacks = []; // YENİ: Can paketleri dizisi
 let score=0, gameOver=false;
 let stars=[], clouds=[], bgX=0, screenMiddle = canvas.width/2;
 let spawnInterval = null, enemyBulletIntervalRef = null;
@@ -86,15 +193,15 @@ spriteImg.src = 'https://opengameart.org/sites/default/files/soldier_sheet.png';
 
 const FRAME_W = 64;
 const FRAME_H = 64;
-const SPRITE_SCALE = 1.6; // draw bigger than original
+const SPRITE_SCALE = 1.0; // draw bigger than original
 const ANIM_FPS = 10;
 const ANIM_TICKS = 1000 / ANIM_FPS;
 
 const animations = {
-  idle: { row: 0, frames: 6 },
-  run:  { row: 1, frames: 6 },
-  shoot:{ row: 2, frames: 6 },
-  dead: { row: 3, frames: 6 }
+  idle: { row: 0, frames: 6 },
+  run:  { row: 1, frames: 6 },
+  shoot:{ row: 2, frames: 6 },
+  dead: { row: 3, frames: 6 }
 };
 
 /* ---------- AUDIO (WebAudio simple effects) ---------- */
@@ -102,119 +209,133 @@ let audioCtx = null;
 let masterGain = null;
 let soundOn = true;
 function ensureAudio(){
-  if(!audioCtx){
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    masterGain = audioCtx.createGain();
-    masterGain.gain.value = 0.9;
-    masterGain.connect(audioCtx.destination);
-  }
+  if(!audioCtx){
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.gain.value = 0.9;
+    masterGain.connect(audioCtx.destination);
+  }
 }
 function playShootSound(){
-  if(!soundOn) return;
-  ensureAudio();
-  const t = audioCtx.currentTime;
-  const o = audioCtx.createOscillator(); o.type='square'; o.frequency.setValueAtTime(900, t);
-  const g = audioCtx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.25, t+0.01); g.gain.exponentialRampToValueAtTime(0.0001, t+0.2);
-  o.connect(g); g.connect(masterGain); o.start(t); o.stop(t+0.21);
+  if(!soundOn) return;
+  ensureAudio();
+  const t = audioCtx.currentTime;
+  const o = audioCtx.createOscillator(); o.type='square'; o.frequency.setValueAtTime(900, t);
+  const g = audioCtx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.25, t+0.01); g.gain.exponentialRampToValueAtTime(0.0001, t+0.2);
+  o.connect(g); g.connect(masterGain); o.start(t); o.stop(t+0.21);
 }
 function playEnemyShootSound(){
-  if(!soundOn) return;
-  ensureAudio();
-  const t = audioCtx.currentTime;
-  const o = audioCtx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(420, t);
-  const g = audioCtx.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(0.15,t+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t+0.3);
-  o.connect(g); g.connect(masterGain); o.start(t); o.stop(t+0.32);
+  if(!soundOn) return;
+  ensureAudio();
+  const t = audioCtx.currentTime;
+  const o = audioCtx.createOscillator(); o.type='sine'; o.frequency.setValueAtTime(420, t);
+  const g = audioCtx.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(0.15,t+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t+0.3);
+  o.connect(g); g.connect(masterGain); o.start(t); o.stop(t+0.32);
 }
 function playHitSound(){
-  if(!soundOn) return;
-  ensureAudio();
-  const t = audioCtx.currentTime;
-  const o = audioCtx.createOscillator(); o.type='triangle'; o.frequency.setValueAtTime(160, t);
-  const g = audioCtx.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(0.5,t+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t+0.25);
-  o.connect(g); g.connect(masterGain); o.start(t); o.stop(t+0.26);
+  if(!soundOn) return;
+  ensureAudio();
+  const t = audioCtx.currentTime;
+  const o = audioCtx.createOscillator(); o.type='triangle'; o.frequency.setValueAtTime(160, t);
+  const g = audioCtx.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(0.5,t+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t+0.25);
+  o.connect(g); g.connect(masterGain); o.start(t); o.stop(t+0.26);
 }
 function playExplosionSound(){
-  if(!soundOn) return;
-  ensureAudio();
-  const t = audioCtx.currentTime;
-  // short noise-ish burst via multiple oscillators
-  for(let i=0;i<3;i++){
-    const o = audioCtx.createOscillator(); o.type='sawtooth'; o.frequency.setValueAtTime(120 + i*40, t);
-    const g = audioCtx.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(0.25,t+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t+0.5);
-    o.connect(g); g.connect(masterGain); o.start(t); o.stop(t+0.5);
-  }
+  if(!soundOn) return;
+  ensureAudio();
+  const t = audioCtx.currentTime;
+  // short noise-ish burst via multiple oscillators
+  for(let i=0;i<3;i++){
+    const o = audioCtx.createOscillator(); o.type='sawtooth'; o.frequency.setValueAtTime(120 + i*40, t);
+    const g = audioCtx.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(0.25,t+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t+0.5);
+    o.connect(g); g.connect(masterGain); o.start(t); o.stop(t+0.5);
+  }
 }
 
 /* ---------- preview animation ---------- */
 function initPreview(){
-  pctx.clearRect(0,0,preview.width,preview.height);
-  for(let i=0;i<40;i++){
-    pctx.fillStyle = ['#ffb74d','#ff8a65','#81d4fa'][i%3];
-    pctx.beginPath(); pctx.arc(Math.random()*preview.width, Math.random()*preview.height, 2+Math.random()*3, 0, Math.PI*2); pctx.fill();
-  }
+  pctx.clearRect(0,0,preview.width,preview.height);
+  for(let i=0;i<40;i++){
+    pctx.fillStyle = ['#ffb74d','#ff8a65','#81d4fa'][i%3];
+    pctx.beginPath(); pctx.arc(Math.random()*preview.width, Math.random()*preview.height, 2+Math.random()*3, 0, Math.PI*2); pctx.fill();
+  }
 }
 initPreview();
 
 /* ---------- engine helpers ---------- */
 function drawSky(){
-  const g = ctx.createLinearGradient(0,0,0,canvas.height);
-  g.addColorStop(0,'#01203a'); g.addColorStop(0.5,'#063049'); g.addColorStop(1,'#071326');
-  ctx.fillStyle = g; ctx.fillRect(0,0,canvas.width,canvas.height);
-  stars.forEach(s=>{
-    const x = (s.x - bgX * s.speed*0.02 + canvas.width) % canvas.width;
-    ctx.fillStyle='#fff'; ctx.globalAlpha = 0.6; ctx.fillRect(x, s.y, s.s, s.s); ctx.globalAlpha = 1;
-  });
-  clouds.forEach(c=>{
-    c.x -= c.speed;
-    if(c.x + c.w < -50) c.x = canvas.width + 50;
-    ctx.fillStyle = 'rgba(255,255,255,0.12)';
-    ctx.beginPath(); ctx.ellipse(c.x, c.y, c.w, c.h, 0, 0, Math.PI*2); ctx.fill();
-  });
-  bgX += 1.2;
+  const g = ctx.createLinearGradient(0,0,0,canvas.height);
+  g.addColorStop(0,'#01203a'); g.addColorStop(0.5,'#063049'); g.addColorStop(1,'#071326');
+  ctx.fillStyle = g; ctx.fillRect(0,0,canvas.width,canvas.height);
+  stars.forEach(s=>{
+    const x = (s.x - bgX * s.speed*0.02 + canvas.width) % canvas.width;
+    ctx.fillStyle='#fff'; ctx.globalAlpha = 0.6; ctx.fillRect(x, s.y, s.s, s.s); ctx.globalAlpha = 1;
+  });
+  clouds.forEach(c=>{
+    c.x -= c.speed;
+    if(c.x + c.w < -50) c.x = canvas.width + 50;
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    ctx.beginPath(); ctx.ellipse(c.x, c.y, c.w, c.h, 0, 0, Math.PI*2); ctx.fill();
+  });
+  bgX += 1.2;
 }
 
 /* ---------- Entities ---------- */
 function initEntities(){
-  player = {
-    x:50, y:canvas.height/2 - 32,
-    w: FRAME_W * SPRITE_SCALE, h: FRAME_H * SPRITE_SCALE,
-    speed:5, lives:3,
-    anim: 'idle', frame:0, timer:0
-  };
-  bullets = []; enemies = []; enemyBullets = []; explosions = [];
-  score=0; gameOver=false;
-  stars=[]; clouds=[];
-  for(let i=0;i<120;i++) stars.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, s:Math.random()*2+0.6, speed:0.2+Math.random()*1.2});
-  for(let i=0;i<28;i++) clouds.push({x:Math.random()*canvas.width, y:50+Math.random()*130, w:100+Math.random()*200, h:25+Math.random()*30, speed:0.2+Math.random()*0.6});
-  if(spawnInterval) clearInterval(spawnInterval);
-  spawnInterval = setInterval(()=>{ if(!gameOver) spawnEnemy(); }, 900);
+  player = {
+    x:50, y:canvas.height/2 - 32,
+    w: FRAME_W * SPRITE_SCALE, h: FRAME_H * SPRITE_SCALE,
+    speed:5, lives:3,
+    anim: 'idle', frame:0, timer:0
+  };
+  bullets = []; enemies = []; enemyBullets = []; explosions = [];
+  healthPacks = []; // YENİ: Başlangıçta can paketlerini temizle
+  score=0; gameOver=false;
+  stars=[]; clouds=[];
+  for(let i=0;i<120;i++) stars.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, s:Math.random()*2+0.6, speed:0.2+Math.random()*1.2});
+  for(let i=0;i<28;i++) clouds.push({x:Math.random()*canvas.width, y:50+Math.random()*130, w:100+Math.random()*200, h:25+Math.random()*30, speed:0.2+Math.random()*0.6});
+  if(spawnInterval) clearInterval(spawnInterval);
+  spawnInterval = setInterval(()=>{ if(!gameOver) spawnEnemy(); }, 900);
 }
 
 /* spawn enemy */
 function spawnEnemy(){
-  const size = 28 + Math.floor(Math.random()*20);
-  enemies.push({ x: canvas.width, y: Math.random()*(canvas.height-size), w:size, h:size, speed:2+Math.random()*2, hp:1, color:'#ff6b6b', shootCooldown: 80 + Math.floor(Math.random()*120) });
+  const size = 28 + Math.floor(Math.random()*20);
+  enemies.push({ x: canvas.width, y: Math.random()*(canvas.height-size), w:size, h:size, speed:2+Math.random()*2, hp:1, color:'#ff6b6b', shootCooldown: 80 + Math.floor(Math.random()*120) });
 }
 
 /* enemy shoots */
 function enemyShoot(en){
-  if(!en) return;
-  enemyBullets.push({ x: en.x, y: en.y + en.h/2 - 3, w:8, h:6, speed: -8, color:'#f90', from: en });
-  playEnemyShootSound();
+  if(!en) return;
+  enemyBullets.push({ x: en.x, y: en.y + en.h/2 - 3, w:8, h:6, speed: -8, color:'#f90', from: en });
+  playEnemyShootSound();
 }
 
 /* bullets (player) */
 function shoot(){
-  if(!player || gameOver) return;
-  player.anim = 'shoot'; player.frame = 0; player.timer = 0;
-  bullets.push({ x: player.x + player.w - 6, y: player.y + player.h/2 - 4, w:10, h:6, speed:14, color:'#fff' });
-  playShootSound();
+  if(!player || gameOver) return;
+  player.anim = 'shoot'; player.frame = 0; player.timer = 0;
+  bullets.push({ x: player.x + player.w - 6, y: player.y + player.h/2 - 4, w:10, h:6, speed:14, color:'#fff' });
+  playShootSound();
 }
 
 /* simple explosion (circle) */
 function createExplosion(x,y){
-  explosions.push({ x,y, r:0, max:28, t:0 });
-  playExplosionSound();
+  explosions.push({ x,y, r:0, max:28, t:0 });
+  playExplosionSound();
+}
+
+// YENİ FONKSİYON: Can Paketi Oluşturma
+function createHealthPack(x, y) {
+    healthPacks.push({
+        x: x,
+        y: y,
+        w: 20,
+        h: 20,
+        speed: 1.5,
+        color: '#4CAF50', // Yeşil
+        glow: 'rgba(76, 175, 80, 0.4)'
+    });
 }
 
 /* collision helper */
@@ -222,27 +343,27 @@ function overlap(a,b){ return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + 
 
 /* ---------- sprite update/draw ---------- */
 function updatePlayerSprite(dt){
-  player.timer += dt;
-  if(player.timer >= ANIM_TICKS){
-    player.timer = 0;
-    player.frame++;
-    const anim = animations[player.anim];
-    if(player.frame >= anim.frames){
-      if(player.anim === 'shoot'){ player.anim = 'idle'; player.frame = 0; }
-      else if(player.anim === 'dead'){ player.frame = anim.frames - 1; }
-      else player.frame = 0;
-    }
-  }
+  player.timer += dt;
+  if(player.timer >= ANIM_TICKS){
+    player.timer = 0;
+    player.frame++;
+    const anim = animations[player.anim];
+    if(player.frame >= anim.frames){
+      if(player.anim === 'shoot'){ player.anim = 'idle'; player.frame = 0; }
+      else if(player.anim === 'dead'){ player.frame = anim.frames - 1; }
+      else player.frame = 0;
+    }
+  }
 }
 function drawPlayerSprite(){
-  if(spriteImg.complete && spriteImg.naturalWidth){
-    const anim = animations[player.anim];
-    const sx = player.frame * FRAME_W;
-    const sy = anim.row * FRAME_H;
-    ctx.drawImage(spriteImg, sx, sy, FRAME_W, FRAME_H, player.x, player.y, player.w, player.h);
-  } else {
-    ctx.fillStyle = '#00c3ff'; ctx.fillRect(player.x, player.y, player.w, player.h);
-  }
+  if(spriteImg.complete && spriteImg.naturalWidth){
+    const anim = animations[player.anim];
+    const sx = player.frame * FRAME_W;
+    const sy = anim.row * FRAME_H;
+    ctx.drawImage(spriteImg, sx, sy, FRAME_W, FRAME_H, player.x, player.y, player.w, player.h);
+  } else {
+    ctx.fillStyle = '#00c3ff'; ctx.fillRect(player.x, player.y, player.w, player.h);
+  }
 }
 
 /* ---------- main loop ---------- */
@@ -250,161 +371,230 @@ let lastTS = 0;
 let running = false;
 
 function loop(timestamp){
-  if(!running) return;
-  const dt = timestamp - lastTS || 16;
-  lastTS = timestamp;
+  if(!running) return;
+  const dt = timestamp - lastTS || 16;
+  lastTS = timestamp;
 
-  drawSky();
+  drawSky();
 
-  // input movement
-  if(keys['arrowup']||keys['w']) { player.y = Math.max(0, player.y - player.speed); player.anim = 'run'; }
-  else if(keys['arrowdown']||keys['s']) { player.y = Math.min(canvas.height - player.h, player.y + player.speed); player.anim = 'run'; }
-  else if(keys['arrowleft']||keys['a']) { player.x = Math.max(0, player.x - player.speed); player.anim = 'run'; }
-  else if(keys['arrowright']||keys['d']) { player.x = Math.min(screenMiddle - player.w, player.x + player.speed); player.anim = 'run'; }
-  else { if(player.anim !== 'shoot' && player.anim !== 'dead') player.anim = 'idle'; }
+  // input movement
+  if(keys['arrowup']||keys['w']) { player.y = Math.max(0, player.y - player.speed); player.anim = 'run'; }
+  else if(keys['arrowdown']||keys['s']) { player.y = Math.min(canvas.height - player.h, player.y + player.speed); player.anim = 'run'; }
+  else if(keys['arrowleft']||keys['a']) { player.x = Math.max(0, player.x - player.speed); player.anim = 'run'; }
+  else if(keys['arrowright']||keys['d']) { player.x = Math.min(screenMiddle - player.w, player.x + player.speed); player.anim = 'run'; }
+  else { if(player.anim !== 'shoot' && player.anim !== 'dead') player.anim = 'idle'; }
 
-  if(mobileMode){
-    if(window._mobileLeft) { player.x = Math.max(0, player.x - player.speed); player.anim='run'; }
-    if(window._mobileRight) { player.x = Math.min(screenMiddle - player.w, player.x + player.speed); player.anim='run'; }
-  }
+  // MOBİL KONTROLLER GÜNCELLENDİ
+  if(mobileMode){
+    if(window._mobileUp) { player.y = Math.max(0, player.y - player.speed); player.anim='run'; }
+    if(window._mobileDown) { player.y = Math.min(canvas.height - player.h, player.y + player.speed); player.anim='run'; }
+    if(window._mobileLeft) { player.x = Math.max(0, player.x - player.speed); player.anim='run'; }
+    if(window._mobileRight) { player.x = Math.min(screenMiddle - player.w, player.x + player.speed); player.anim='run'; }
+  }
+  // GÜNCELLEME SONU
 
-  // update bullets
-  bullets.forEach((b,i)=>{ b.x += b.speed; if(b.x > canvas.width) bullets.splice(i,1); });
+  // update bullets
+  bullets.forEach((b,i)=>{ b.x += b.speed; if(b.x > canvas.width) bullets.splice(i,1); });
 
-  // enemies: move, shoot, check hit by player bullets
-  enemies.forEach((en, ei)=>{
-    en.x -= en.speed;
-    // shoot cooldown
-    en.shootCooldown--;
-    if(en.shootCooldown <= 0){
-      enemyShoot(en);
-      en.shootCooldown = 60 + Math.floor(Math.random()*120);
-    }
-    // bullet collision
-    bullets.forEach((b, bi)=>{
-      if(overlap(b,en)){
-        bullets.splice(bi,1);
-        en.hp--;
-        createExplosion(en.x + en.w/2, en.y + en.h/2);
-        playHitSound();
-        if(en.hp <= 0){
-          enemies.splice(ei,1);
-          score += 1;
-        }
-      }
-    });
-    // remove if offscreen
-    if(en.x + en.w < -50) enemies.splice(ei,1);
-  });
+  // enemies: move, shoot, check hit by player bullets
+  enemies.forEach((en, ei)=>{
+    en.x -= en.speed;
+    // shoot cooldown
+    en.shootCooldown--;
+    if(en.shootCooldown <= 0){
+      enemyShoot(en);
+      en.shootCooldown = 60 + Math.floor(Math.random()*120);
+    }
+    // bullet collision
+    bullets.forEach((b, bi)=>{
+      if(overlap(b,en)){
+        bullets.splice(bi,1);
+        en.hp--;
+        createExplosion(en.x + en.w/2, en.y + en.h/2);
+        playHitSound();
+        if(en.hp <= 0){
+          enemies.splice(ei,1);
+          score += 1;
+          
+          // YENİ: %10 şansla Can Paketi düşür
+          if(Math.random() < 0.1){ 
+              createHealthPack(en.x + en.w/2, en.y + en.h/2);
+          }
+        }
+      }
+    });
+    // remove if offscreen
+    if(en.x + en.w < -50) enemies.splice(ei,1);
+  });
 
-  // enemy bullets: move toward left (negative speed), check hit player
-  enemyBullets.forEach((eb, i)=>{
-    eb.x += eb.speed; // speed negative
-    if(eb.x + eb.w < 0) { enemyBullets.splice(i,1); return; }
-    if(overlap(eb, player)){
-      enemyBullets.splice(i,1);
-      player.lives = Math.max(0, player.lives - 1);
-      createExplosion(player.x + player.w/2, player.y + player.h/2);
-      playHitSound();
-      // if dead
-      if(player.lives <= 0){
-        player.anim = 'dead';
-        gameOver = true;
-        running = false;
-        document.getElementById('finalScore').innerText = 'Toplam Puan: ' + score;
-        document.getElementById('gameOverScreen').style.display = 'block';
-      }
-    }
-  });
+  // enemy bullets: move toward left (negative speed), check hit player
+  enemyBullets.forEach((eb, i)=>{
+    eb.x += eb.speed; // speed negative
+    if(eb.x + eb.w < 0) { enemyBullets.splice(i,1); return; }
+    if(overlap(eb, player)){
+      enemyBullets.splice(i,1);
+      player.lives = Math.max(0, player.lives - 1);
+      createExplosion(player.x + player.w/2, player.y + player.h/2);
+      playHitSound();
+      // if dead
+      if(player.lives <= 0){
+        player.anim = 'dead';
+        gameOver = true;
+        running = false;
+        document.getElementById('finalScore').innerText = 'Toplam Puan: ' + score;
+        document.getElementById('gameOverScreen').style.display = 'block';
+      }
+    }
+  });
+  
+  // YENİ: Health packs: hareket, oyuncuyla çarpışma kontrolü ve toplama
+  healthPacks.forEach((hp, hpi) => {
+      hp.x -= hp.speed;
+      // Ekran dışına çıkarsa kaldır
+      if(hp.x + hp.w < 0) { healthPacks.splice(hpi, 1); return; }
 
-  // update explosions (simple expand)
-  explosions.forEach((ex, idx)=>{
-    ex.t += dt;
-    ex.r = Math.min(ex.max, ex.r + dt*0.05);
-    // draw simple explosion circle fade
-    ctx.beginPath(); ctx.fillStyle = `rgba(255,180,60,${1 - ex.r/ex.max})`; ctx.arc(ex.x, ex.y, ex.r, 0, Math.PI*2); ctx.fill();
-    if(ex.r >= ex.max) explosions.splice(idx,1);
-  });
+      // Oyuncuyla çarpışma (Can Toplama)
+      if(overlap(hp, player)){
+          healthPacks.splice(hpi, 1);
+          player.lives = Math.min(3, player.lives + 1); // Canı en fazla 3'te tut
+          playShootSound(); // Can toplama sesi olarak mermi sesini kullandık
+      }
+  });
 
-  // player sprite update & draw
-  updatePlayerSprite(dt);
-  drawPlayerSprite();
 
-  // draw bullets/enemies/enemy bullets/HUD
-  bullets.forEach(b=>{ ctx.fillStyle=b.color; ctx.fillRect(b.x,b.y,b.w,b.h); });
-  enemies.forEach(e=>{ ctx.fillStyle = e.color; ctx.fillRect(e.x,e.y,e.w,e.h); });
-  enemyBullets.forEach(eb=>{ ctx.fillStyle = eb.color; ctx.fillRect(eb.x, eb.y, eb.w, eb.h); });
+  // update explosions (simple expand)
+  explosions.forEach((ex, idx)=>{
+    ex.t += dt;
+    ex.r = Math.min(ex.max, ex.r + dt*0.05);
+    // draw simple explosion circle fade
+    ctx.beginPath(); ctx.fillStyle = `rgba(255,180,60,${1 - ex.r/ex.max})`; ctx.arc(ex.x, ex.y, ex.r, 0, Math.PI*2); ctx.fill();
+    if(ex.r >= ex.max) explosions.splice(idx,1);
+  });
 
-  // HUD
-  ctx.fillStyle='#fff'; ctx.font='18px monospace'; ctx.fillText(`Puan: ${score}`, 18, 28);
-  ctx.fillText(`Can: ${player.lives}`, 18, 52);
+  // player sprite update & draw
+  updatePlayerSprite(dt);
+  drawPlayerSprite();
 
-  requestAnimationFrame(loop);
+  // draw bullets/enemies/enemy bullets/HUD
+  bullets.forEach(b=>{ ctx.fillStyle=b.color; ctx.fillRect(b.x,b.y,b.w,b.h); });
+  enemies.forEach(e=>{ ctx.fillStyle = e.color; ctx.fillRect(e.x,e.y,e.w,e.h); });
+  enemyBullets.forEach(eb=>{ ctx.fillStyle = eb.color; ctx.fillRect(eb.x, eb.y, eb.w, eb.h); });
+  
+  // YENİ: Can Paketlerini Çiz
+  healthPacks.forEach(hp => {
+      // Basit bir parlama efekti için
+      ctx.fillStyle = hp.glow;
+      ctx.beginPath(); ctx.arc(hp.x + hp.w/2, hp.y + hp.h/2, hp.w/2 + 5, 0, Math.PI * 2); ctx.fill();
+
+      // Can Paketi (Yeşil kare)
+      ctx.fillStyle = hp.color;
+      ctx.fillRect(hp.x, hp.y, hp.w, hp.h);
+      
+      // Ortasına "+" işareti
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(hp.x + hp.w/2 - 2, hp.y + 4, 4, hp.h - 8);
+      ctx.fillRect(hp.x + 4, hp.y + hp.h/2 - 2, hp.w - 8, 4);
+  });
+
+
+  // HUD
+  ctx.fillStyle='#fff'; ctx.font='18px monospace'; ctx.fillText(`Puan: ${score}`, 18, 28);
+  ctx.fillText(`Can: ${player.lives}`, 18, 52);
+
+  requestAnimationFrame(loop);
 }
 
 /* ---------- Start / controls ---------- */
 function startPC(){
-  document.getElementById('startMenu').style.display='none';
-  document.getElementById('mobileControls').style.display='none';
-  mobileMode = false;
-  screenMiddle = canvas.width/2;
-  initEntities();
-  lastTS = performance.now();
-  running = true;
-  requestAnimationFrame(loop);
+  document.getElementById('startMenu').style.display='none';
+  // PC modunda mobil kontrolleri gizle (EKLEME)
+  document.getElementById('mobileControls').style.display='none'; 
+  mobileMode = false;
+  screenMiddle = canvas.width/2;
+  initEntities();
+  lastTS = performance.now();
+  running = true;
+  requestAnimationFrame(loop);
 }
 function startMobile(){
-  document.getElementById('startMenu').style.display='none';
-  document.getElementById('mobileControls').style.display='flex';
-  mobileMode = true;
-  screenMiddle = canvas.width/2;
-  initEntities();
-  lastTS = performance.now();
-  running = true;
-  requestAnimationFrame(loop);
+  document.getElementById('startMenu').style.display='none';
+  // Mobil modda mobil kontrolleri göster
+  document.getElementById('mobileControls').style.display='grid'; 
+  mobileMode = true;
+  screenMiddle = canvas.width/2;
+  initEntities();
+  lastTS = performance.now();
+  running = true;
+  requestAnimationFrame(loop);
 }
 
 document.getElementById('startBtn').addEventListener('click', ()=>{
-  ensureAudio(); startPC();
+  ensureAudio(); startPC();
 });
 document.getElementById('mobileBtn').addEventListener('click', ()=>{
-  ensureAudio(); startMobile();
+  ensureAudio(); startMobile();
 });
 document.getElementById('howBtn').addEventListener('click', ()=>alert('Hareket: W/A/S/D veya ok tuşları. SPACE: Ateş. Mobile: on-screen butonlar.'));
 document.getElementById('soundBtn').addEventListener('click', ()=>{
-  soundOn = !soundOn;
-  document.getElementById('soundBtn').innerText = soundOn ? 'Ses: Aç' : 'Ses: Kapalı';
-  if(masterGain) masterGain.gain.value = soundOn ? 0.9 : 0;
+  soundOn = !soundOn;
+  document.getElementById('soundBtn').innerText = soundOn ? 'Ses: Aç' : 'Ses: Kapalı';
+  if(masterGain) masterGain.gain.value = soundOn ? 0.9 : 0;
 });
 
-/* mobile button bindings (touch & mouse) */
+/* mobile button bindings (touch & mouse) - BURASI GÜNCELLENDİ */
+const upBtn = document.getElementById('upBtn'), downBtn = document.getElementById('downBtn');
 const leftBtn = document.getElementById('leftBtn'), rightBtn = document.getElementById('rightBtn'), fireBtn = document.getElementById('fireBtn');
+
+// UP / YUKARI
+upBtn.addEventListener('touchstart', ()=>{ window._mobileUp = true; }, {passive:true});
+upBtn.addEventListener('touchend', ()=>{ window._mobileUp = false; }, {passive:true});
+upBtn.addEventListener('mousedown', ()=>{ window._mobileUp = true; });
+upBtn.addEventListener('mouseup', ()=>{ window._mobileUp = false; });
+
+// DOWN / AŞAĞI
+downBtn.addEventListener('touchstart', ()=>{ window._mobileDown = true; }, {passive:true});
+downBtn.addEventListener('touchend', ()=>{ window._mobileDown = false; }, {passive:true});
+downBtn.addEventListener('mousedown', ()=>{ window._mobileDown = true; });
+downBtn.addEventListener('mouseup', ()=>{ window._mobileDown = false; });
+
+// LEFT / SOL
 leftBtn.addEventListener('touchstart', ()=>{ window._mobileLeft = true; }, {passive:true});
 leftBtn.addEventListener('touchend', ()=>{ window._mobileLeft = false; }, {passive:true});
-rightBtn.addEventListener('touchstart', ()=>{ window._mobileRight = true; }, {passive:true});
-rightBtn.addEventListener('touchend', ()=>{ window._mobileRight = false; }, {passive:true});
 leftBtn.addEventListener('mousedown', ()=>{ window._mobileLeft = true; });
 leftBtn.addEventListener('mouseup', ()=>{ window._mobileLeft = false; });
+
+// RIGHT / SAĞ
+rightBtn.addEventListener('touchstart', ()=>{ window._mobileRight = true; }, {passive:true});
+rightBtn.addEventListener('touchend', ()=>{ window._mobileRight = false; }, {passive:true});
 rightBtn.addEventListener('mousedown', ()=>{ window._mobileRight = true; });
 rightBtn.addEventListener('mouseup', ()=>{ window._mobileRight = false; });
+
+// FIRE / ATEŞ
 fireBtn.addEventListener('click', ()=>{ if(mobileMode) shoot(); });
+/* GÜNCELLEME SONU */
 
 /* keyboard fire */
 addEventListener('keydown', e=>{ if(e.key === ' ') shoot(); });
 
 /* restartGame */
 function restartGame(){
-  document.getElementById('gameOverScreen').style.display='none';
-  initEntities();
-  running = true;
-  gameOver = false;
-  lastTS = performance.now();
-  requestAnimationFrame(loop);
+  document.getElementById('gameOverScreen').style.display='none';
+  // Mobil modda tekrar başlatırken kontrolleri tekrar göster (gerekliyse)
+  if(mobileMode){
+    document.getElementById('mobileControls').style.display='grid';
+  }
+  initEntities();
+  running = true;
+  gameOver = false;
+  lastTS = performance.now();
+  requestAnimationFrame(loop);
 }
 
 /* resize */
 addEventListener('resize', ()=>{ canvas.width = innerWidth; canvas.height = innerHeight; screenMiddle = canvas.width/2; });
 
 </script>
+
 </body>
+
 </html>
